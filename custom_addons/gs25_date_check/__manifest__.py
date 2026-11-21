@@ -11,7 +11,12 @@
     'category': 'Inventory',
     'version': '19.0.1.0.0',
     'depends': ['stock', 'product_expiry'],
-    'data': [],
+    'data': [
+    'security/security.xml',
+    'security/ir.model.access.csv',
+    'views/views.xml',
+    'views/date_check_record_views.xml',
+    ],
     'demo': [],
     'installable': True,
     'application': True,

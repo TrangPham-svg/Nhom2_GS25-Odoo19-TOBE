@@ -1,0 +1,6 @@
+<odoo>
+    <!-- Nhóm quyền quản lý Date Check -->
+    <record id="group_gs25_date_check_manager" model="res.groups">
+        <field name="name">GS25 Date Check Manager</field>
+    </record>
+</odoo>

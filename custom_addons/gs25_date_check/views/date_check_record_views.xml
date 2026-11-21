@@ -1,0 +1,85 @@
+<odoo>
+    <!-- Giao diện danh sách phiếu kiểm tra -->
+    <record id="view_gs25_date_check_record_list" model="ir.ui.view">
+        <field name="name">gs25.date.check.record.list</field>
+        <field name="model">gs25.date.check.record</field>
+        <field name="arch" type="xml">
+            <list string="Phiếu kiểm tra Date Check">
+                <field name="name"/>
+                <field name="lot_id"/>
+                <field name="product_id"/>
+                <field name="check_date"/>
+                <field name="checked_quantity"/>
+                <field name="quality_result"/>
+                <field name="state"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Giao diện chi tiết phiếu kiểm tra -->
+    <record id="view_gs25_date_check_record_form" model="ir.ui.view">
+        <field name="name">gs25.date.check.record.form</field>
+        <field name="model">gs25.date.check.record</field>
+        <field name="arch" type="xml">
+            <form string="Phiếu kiểm tra Date Check">
+                <header>
+                    <button name="action_submit"
+                            type="object"
+                            string="Gửi quản lý"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+
+                    <button name="action_approve"
+                            type="object"
+                            string="Xác nhận"
+                            class="btn-primary"
+                            groups="gs25_date_check.group_gs25_date_check_manager"
+                            invisible="state != 'waiting'"/>
+                    
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,waiting,approved"/>
+                </header>
+
+                <sheet>
+                    <group>
+                        <group>
+                            <field name="name"/>
+                            <field name="lot_id"/>
+                            <field name="product_id"/>
+                            <field name="expiration_date"/>
+                            <field name="checked_quantity"/>
+                        </group>
+
+                        <group>
+                            <field name="check_date"/>
+                            <field name="checker_id"/>
+                            <field name="quality_result"/>
+                            <field name="proposed_action"/>
+                        </group>
+                    </group>
+
+                    <group string="Ghi chú kiểm tra">
+                        <field name="note"/>
+                    </group>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action mở phiếu kiểm tra -->
+    <record id="action_gs25_date_check_records" model="ir.actions.act_window">
+        <field name="name">Phiếu kiểm tra Date Check</field>
+        <field name="res_model">gs25.date.check.record</field>
+        <field name="view_mode">list,form</field>
+    </record>
+
+    <!-- Menu phiếu kiểm tra -->
+    <menuitem
+        id="menu_gs25_date_check_records"
+        name="Phiếu kiểm tra"
+        parent="menu_gs25_date_check_root"
+        action="action_gs25_date_check_records"
+        sequence="20"
+    />
+</odoo>
