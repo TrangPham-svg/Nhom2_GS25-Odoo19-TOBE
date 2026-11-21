@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gs25_date_check_gs25_date_check,gs25_date_check.gs25_date_check,model_gs25_date_check_gs25_date_check,base.group_user,1,1,1,1

@@ -1,0 +1,60 @@
+<odoo>
+  <data>
+    <!-- explicit list view definition -->
+<!--
+    <record model="ir.ui.view" id="gs25_receiving.list">
+      <field name="name">gs25_receiving list</field>
+      <field name="model">gs25_receiving.gs25_receiving</field>
+      <field name="arch" type="xml">
+        <list>
+          <field name="name"/>
+          <field name="value"/>
+          <field name="value2"/>
+        </list>
+      </field>
+    </record>
+-->
+
+    <!-- actions opening views on models -->
+<!--
+    <record model="ir.actions.act_window" id="gs25_receiving.action_window">
+      <field name="name">gs25_receiving window</field>
+      <field name="res_model">gs25_receiving.gs25_receiving</field>
+      <field name="view_mode">list,form</field>
+    </record>
+-->
+
+    <!-- server action to the one above -->
+<!--
+    <record model="ir.actions.server" id="gs25_receiving.action_server">
+      <field name="name">gs25_receiving server</field>
+      <field name="model_id" ref="model_gs25_receiving_gs25_receiving"/>
+      <field name="state">code</field>
+      <field name="code">
+        action = {
+          "type": "ir.actions.act_window",
+          "view_mode": "list,form",
+          "res_model": model._name,
+        }
+      </field>
+    </record>
+-->
+
+    <!-- Top menu item -->
+<!--
+    <menuitem name="gs25_receiving" id="gs25_receiving.menu_root"/>
+-->
+    <!-- menu categories -->
+<!--
+    <menuitem name="Menu 1" id="gs25_receiving.menu_1" parent="gs25_receiving.menu_root"/>
+    <menuitem name="Menu 2" id="gs25_receiving.menu_2" parent="gs25_receiving.menu_root"/>
+-->
+    <!-- actions -->
+<!--
+    <menuitem name="List" id="gs25_receiving.menu_1_list" parent="gs25_receiving.menu_1"
+              action="gs25_receiving.action_window"/>
+    <menuitem name="Server to list" id="gs25_receiving" parent="gs25_receiving.menu_2"
+              action="gs25_receiving.action_server"/>
+-->
+  </data>
+</odoo>

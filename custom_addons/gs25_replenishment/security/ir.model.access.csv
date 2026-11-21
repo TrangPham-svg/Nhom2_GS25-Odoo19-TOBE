@@ -1,0 +1,2 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_gs25_replenishment_gs25_replenishment,gs25_replenishment.gs25_replenishment,model_gs25_replenishment_gs25_replenishment,base.group_user,1,1,1,1
