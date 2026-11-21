@@ -218,3 +218,35 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+
+
+
+
+# GS25 - Odoo 19 Project
+# Secrets and local environment
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Database backups
+*.dump
+*.backup
+*.sql
+backups/
+
+# Odoo filestore and temporary data
+filestore/
+filestore_*/
+odoo_data/
+*.log
+
+# Local data files (not source code)
+data/private/
+data/temp/
+
+# Operating system files
+.DS_Store
+Thumbs.db
