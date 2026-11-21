@@ -250,3 +250,18 @@ data/temp/
 # Operating system files
 .DS_Store
 Thumbs.db
+
+# Odoo local configuration
+odoo.conf
+odoo.local.conf
+
+# Docker local environment
+docker-compose.override.yml
+
+# Database backup archives
+*.sql.gz
+*.dump.gz
+*.backup.gz
+
+# Windows temporary files
+Desktop.ini
