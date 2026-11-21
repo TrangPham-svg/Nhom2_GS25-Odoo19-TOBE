@@ -1,33 +1,68 @@
 <odoo>
-    <!-- Giao diện danh sách phiếu kiểm tra -->
+    <!-- 1. GIAO DIỆN DANH SÁCH PHIẾU KIỂM TRA -->
     <record id="view_gs25_date_check_record_list" model="ir.ui.view">
         <field name="name">gs25.date.check.record.list</field>
         <field name="model">gs25.date.check.record</field>
         <field name="arch" type="xml">
-            <list string="Phiếu kiểm tra Date Check">
+
+            <list string="Phiếu kiểm tra"
+                  decoration-muted="state == 'cancelled'">
+
                 <field name="name"/>
                 <field name="lot_id"/>
                 <field name="product_id"/>
                 <field name="check_date"/>
+                <field name="checker_id" optional="hide"/>
                 <field name="checked_quantity"/>
                 <field name="quality_result"/>
-                <field name="state"/>
+                <field name="proposed_action"/>
+
+                <field name="state"
+                       widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-warning="state == 'waiting'"
+                       decoration-info="state == 'approved'"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'cancelled'"/>
+
+                <field name="processed_quantity"
+                       optional="hide"/>
+
+                <field name="processed_by_id"
+                       optional="hide"/>
+
+                <field name="processed_date"
+                       optional="hide"/>
+
             </list>
+
         </field>
     </record>
 
-    <!-- Giao diện chi tiết phiếu kiểm tra -->
+
+    <!-- 2. GIAO DIỆN CHI TIẾT PHIẾU KIỂM TRA -->
     <record id="view_gs25_date_check_record_form" model="ir.ui.view">
         <field name="name">gs25.date.check.record.form</field>
         <field name="model">gs25.date.check.record</field>
         <field name="arch" type="xml">
-            <form string="Phiếu kiểm tra Date Check">
+
+            <form string="Phiếu kiểm tra">
+
+                <!-- CÁC NÚT XỬ LÝ NGHIỆP VỤ -->
                 <header>
+
                     <button name="action_submit"
                             type="object"
                             string="Gửi quản lý"
                             class="btn-primary"
-                            invisible="state != 'draft'"/>
+                            invisible="not can_edit_draft"/>
+
+                    <button name="action_delete_draft"
+                            type="object"
+                            string="Xóa bản nháp"
+                            class="btn-secondary"
+                            invisible="not can_delete_draft"
+                            confirm="Bạn có chắc chắn muốn xóa phiếu Nháp này không?"/>
 
                     <button name="action_approve"
                             type="object"
@@ -35,51 +70,455 @@
                             class="btn-primary"
                             groups="gs25_date_check.group_gs25_date_check_manager"
                             invisible="state != 'waiting'"/>
-                    
+
+                    <button name="action_return_to_draft"
+                            type="object"
+                            string="Yêu cầu bổ sung"
+                            class="btn-secondary"
+                            groups="gs25_date_check.group_gs25_date_check_manager"
+                            invisible="state != 'waiting'"/>
+
+                    <!-- Nút thực hiện phương án xử lý -->
+                    <button name="action_open_process_wizard"
+                            type="object"
+                            string="Thực hiện xử lý"
+                            class="btn-primary"
+                            groups="gs25_date_check.group_gs25_date_check_manager"
+                            invisible="state != 'approved'"/>
+
+                    <!-- Nút hủy phiếu -->
+                    <button name="action_open_cancel_wizard"
+                            type="object"
+                            string="Hủy phiếu"
+                            class="btn-secondary text-danger"
+                            groups="gs25_date_check.group_gs25_date_check_manager"
+                            invisible="state != 'waiting' and not (state == 'draft' and returned_date)"/>
+
+                    <!-- Thanh trạng thái -->
                     <field name="state"
                            widget="statusbar"
-                           statusbar_visible="draft,waiting,approved"/>
+                           readonly="1"
+                           statusbar_visible="draft,waiting,approved,done"/>
+
                 </header>
 
                 <sheet>
+
+                    <!-- TRƯỜNG KỸ THUẬT KIỂM SOÁT QUYỀN -->
+                    <field name="can_edit_draft" invisible="1"/>
+                    <field name="can_delete_draft" invisible="1"/>
+                    <field name="returned_date" invisible="1"/>
+
+
+                    <!-- THÔNG BÁO PHIẾU ĐƯỢC TRẢ LẠI -->
+                    <div class="alert alert-warning"
+                         role="alert"
+                         invisible="state != 'draft' or not returned_date">
+
+                        <strong>Phiếu cần bổ sung thông tin.</strong>
+
+                        Vui lòng xem phản hồi của quản lý,
+                        chỉnh sửa nội dung và gửi lại phiếu.
+
+                    </div>
+
+
+                    <!-- THÔNG BÁO PHIẾU ĐÃ XÁC NHẬN -->
+                    <div class="alert alert-info"
+                         role="alert"
+                         invisible="state != 'approved'">
+
+                        <strong>Phiếu đã được xác nhận.</strong>
+
+                        Phương án xử lý đã được quản lý chấp thuận.
+                        Đang chờ thực hiện xử lý hàng hóa.
+
+                    </div>
+
+
+                    <!-- THÔNG BÁO ĐÃ XỬ LÝ -->
+                    <div class="alert alert-success"
+                         role="alert"
+                         invisible="state != 'done'">
+
+                        <strong>Đã hoàn thành xử lý hàng hóa.</strong>
+
+                        Kết quả xử lý đã được ghi nhận trên hệ thống.
+                        Phiếu không thể chỉnh sửa hoặc thực hiện lại.
+
+                    </div>
+
+
+                    <!-- THÔNG BÁO PHIẾU ĐÃ HỦY -->
+                    <div class="alert alert-danger"
+                         role="alert"
+                         invisible="state != 'cancelled'">
+
+                        <strong>Phiếu kiểm tra đã bị hủy.</strong>
+
+                        Phiếu không còn hiệu lực xử lý.
+                        Thông tin được lưu lại để truy xuất lịch sử.
+
+                    </div>
+
+
+                    <!-- 3. THÔNG TIN KIỂM TRA -->
                     <group>
+
                         <group>
-                            <field name="name"/>
-                            <field name="lot_id"/>
-                            <field name="product_id"/>
-                            <field name="expiration_date"/>
-                            <field name="checked_quantity"/>
+
+                            <field name="name"
+                                   readonly="1"/>
+
+                            <field name="lot_id"
+                                   readonly="not can_edit_draft"/>
+
+                            <field name="product_id"
+                                   readonly="1"/>
+
+                            <field name="expiration_date"
+                                   readonly="1"/>
+
+                            <field name="checked_quantity"
+                                   readonly="not can_edit_draft"/>
+
                         </group>
 
                         <group>
-                            <field name="check_date"/>
-                            <field name="checker_id"/>
-                            <field name="quality_result"/>
-                            <field name="proposed_action"/>
+
+                            <field name="check_date"
+                                   readonly="not can_edit_draft"/>
+
+                            <field name="checker_id"
+                                   readonly="not can_edit_draft"/>
+
+                            <field name="quality_result"
+                                   readonly="not can_edit_draft"/>
+
+                            <field name="proposed_action"
+                                   readonly="not can_edit_draft"/>
+
                         </group>
+
                     </group>
 
+
+                    <!-- 4. GHI CHÚ KIỂM TRA -->
                     <group string="Ghi chú kiểm tra">
-                        <field name="note"/>
+
+                        <field name="note"
+                               nolabel="1"
+                               colspan="2"
+                               widget="text"
+                               readonly="not can_edit_draft"
+                               placeholder="Nhập tình trạng hàng hóa hoặc lý do đề xuất xử lý..."/>
+
                     </group>
+
+
+                    <!-- 5. PHẢN HỒI DÀNH CHO QUẢN LÝ -->
+                    <group string="Phản hồi của quản lý"
+                           groups="gs25_date_check.group_gs25_date_check_manager"
+                           invisible="state != 'waiting' and not returned_date">
+
+                        <field name="return_reason"
+                               widget="text"
+                               readonly="state != 'waiting'"
+                               placeholder="Nhập nội dung yêu cầu nhân viên bổ sung..."/>
+
+                        <field name="returned_by_id"
+                               readonly="1"
+                               invisible="not returned_date"/>
+
+                        <field name="returned_date"
+                               readonly="1"
+                               invisible="not returned_date"/>
+
+                    </group>
+
+
+                    <!-- 6. NHÂN VIÊN XEM PHẢN HỒI CỦA QUẢN LÝ -->
+                    <group string="Phản hồi của quản lý"
+                           groups="!gs25_date_check.group_gs25_date_check_manager"
+                           invisible="not returned_date">
+
+                        <field name="return_reason"
+                               readonly="1"/>
+
+                        <field name="returned_by_id"
+                               readonly="1"/>
+
+                        <field name="returned_date"
+                               readonly="1"/>
+
+                    </group>
+
+
+                    <!-- 7. THÔNG TIN HỦY PHIẾU -->
+                    <group string="Thông tin hủy phiếu"
+                           invisible="state != 'cancelled'">
+
+                        <group>
+
+                            <field name="cancelled_by_id"
+                                   readonly="1"/>
+
+                        </group>
+
+                        <group>
+
+                            <field name="cancelled_date"
+                                   readonly="1"/>
+
+                        </group>
+
+                        <field name="cancel_reason"
+                               readonly="1"
+                               colspan="2"
+                               widget="text"/>
+
+                    </group>
+
+
+                    <!-- 8. KẾT QUẢ THỰC HIỆN XỬ LÝ -->
+                    <group string="Kết quả thực hiện xử lý"
+                           invisible="state != 'done'">
+
+                        <group>
+
+                            <field name="processed_quantity"
+                                   readonly="1"/>
+
+                            <field name="processed_by_id"
+                                   readonly="1"/>
+
+                        </group>
+
+                        <group>
+
+                            <field name="processed_date"
+                                   readonly="1"/>
+
+                            <field name="next_check_date"
+                                   readonly="1"
+                                   invisible="proposed_action != 'monitor'"/>
+
+                        </group>
+
+                        <field name="processing_note"
+                               readonly="1"
+                               colspan="2"
+                               widget="text"/>
+
+                    </group>
+
+
+                    <!-- 9. DANH SÁCH PHIẾU SCRAP -->
+                    <group string="Phiếu loại bỏ hàng hóa"
+                           groups="stock.group_stock_user"
+                           invisible="state != 'done' or proposed_action != 'remove'">
+
+                        <field name="scrap_ids"
+                               readonly="1"
+                               nolabel="1"
+                               colspan="2">
+
+                            <list create="false"
+                                  edit="false"
+                                  delete="false">
+
+                                <field name="name"
+                                       string="Mã phiếu Scrap"/>
+
+                                <field name="product_id"/>
+
+                                <field name="lot_id"/>
+
+                                <field name="scrap_qty"
+                                       string="Số lượng loại bỏ"/>
+
+                                <field name="location_id"
+                                       string="Vị trí nguồn"/>
+
+                                <field name="scrap_location_id"
+                                       string="Vị trí phế phẩm"/>
+
+                                <field name="state"
+                                       widget="badge"
+                                       decoration-success="state == 'done'"
+                                       decoration-muted="state == 'draft'"/>
+
+                            </list>
+
+                        </field>
+
+                    </group>
+
                 </sheet>
+
             </form>
+
         </field>
     </record>
 
-    <!-- Action mở phiếu kiểm tra -->
-    <record id="action_gs25_date_check_records" model="ir.actions.act_window">
-        <field name="name">Phiếu kiểm tra Date Check</field>
-        <field name="res_model">gs25.date.check.record</field>
-        <field name="view_mode">list,form</field>
+
+    <!-- 10. BỘ LỌC TÌM KIẾM PHIẾU -->
+    <record id="view_gs25_date_check_record_search"
+            model="ir.ui.view">
+
+        <field name="name">gs25.date.check.record.search</field>
+        <field name="model">gs25.date.check.record</field>
+
+        <field name="arch" type="xml">
+
+            <search string="Tìm kiếm phiếu kiểm tra">
+
+                <field name="name"/>
+                <field name="lot_id"/>
+                <field name="product_id"/>
+                <field name="checker_id"/>
+                <field name="create_uid" string="Người tạo phiếu"/>
+                <field name="processed_by_id"/>
+
+                <!-- Bộ lọc trạng thái -->
+
+                <filter name="unfinished"
+                        string="Chưa hoàn thành"
+                        domain="[('state', 'in', ['draft', 'waiting', 'approved'])]"/>
+
+                <filter name="draft"
+                        string="Nháp"
+                        domain="[('state', '=', 'draft')]"/>
+
+                <filter name="waiting"
+                        string="Chờ xác nhận"
+                        domain="[('state', '=', 'waiting')]"/>
+
+                <filter name="approved"
+                        string="Chờ xử lý"
+                        domain="[('state', '=', 'approved')]"/>
+
+                <filter name="done"
+                        string="Đã xử lý"
+                        domain="[('state', '=', 'done')]"/>
+
+                <filter name="cancelled"
+                        string="Đã hủy"
+                        domain="[('state', '=', 'cancelled')]"/>
+
+                <separator/>
+
+                <!-- Bộ lọc phương án xử lý -->
+
+                <filter name="priority_sale"
+                        string="Ưu tiên bán"
+                        domain="[('proposed_action', '=', 'priority_sale')]"/>
+
+                <filter name="monitor"
+                        string="Tiếp tục theo dõi"
+                        domain="[('proposed_action', '=', 'monitor')]"/>
+
+                <filter name="remove"
+                        string="Đề xuất loại bỏ"
+                        domain="[('proposed_action', '=', 'remove')]"/>
+
+                <separator/>
+
+                <filter name="my_records"
+                        string="Phiếu của tôi"
+                        domain="[('create_uid', '=', uid)]"/>
+
+                <separator/>
+
+                <filter name="returned_records"
+                        string="Cần bổ sung"
+                        domain="[('state', '=', 'draft'), ('returned_date', '!=', False)]"/>
+
+                <separator/>
+
+                <!-- Bộ lọc kết quả kiểm tra -->
+
+                <filter name="quality_good"
+                        string="Đạt yêu cầu"
+                        domain="[('quality_result', '=', 'good')]"/>
+
+                <filter name="quality_bad"
+                        string="Không đạt yêu cầu"
+                        domain="[('quality_result', '=', 'bad')]"/>
+
+                <separator/>
+
+                <filter name="filter_check_date"
+                        string="Ngày kiểm tra"
+                        date="check_date"/>
+
+                <separator/>
+
+                <!-- Nhóm dữ liệu -->
+
+                <group>
+
+                    <filter name="group_by_state"
+                            string="Trạng thái"
+                            context="{'group_by': 'state'}"/>
+
+                    <filter name="group_by_checker"
+                            string="Người kiểm tra"
+                            context="{'group_by': 'checker_id'}"/>
+
+                    <filter name="group_by_action"
+                            string="Phương án xử lý"
+                            context="{'group_by': 'proposed_action'}"/>
+
+                    <filter name="group_by_product"
+                            string="Sản phẩm"
+                            context="{'group_by': 'product_id'}"/>
+
+                    <filter name="group_by_lot"
+                            string="Số lô"
+                            context="{'group_by': 'lot_id'}"/>
+
+                    <filter name="group_by_processor"
+                            string="Người xử lý"
+                            context="{'group_by': 'processed_by_id'}"/>
+
+                    <filter name="group_by_check_date"
+                            string="Ngày kiểm tra"
+                            context="{'group_by': 'check_date:month'}"/>
+
+                </group>
+
+            </search>
+
+        </field>
+
     </record>
 
-    <!-- Menu phiếu kiểm tra -->
+
+    <!-- 11. ACTION MỞ PHIẾU KIỂM TRA -->
+    <record id="action_gs25_date_check_records"
+            model="ir.actions.act_window">
+
+        <field name="name">Phiếu kiểm tra</field>
+
+        <field name="res_model">gs25.date.check.record</field>
+
+        <field name="view_mode">list,form</field>
+
+        <field name="search_view_id"
+               ref="view_gs25_date_check_record_search"/>
+
+    </record>
+
+
+    <!-- 12. MENU PHIẾU KIỂM TRA -->
     <menuitem
         id="menu_gs25_date_check_records"
         name="Phiếu kiểm tra"
         parent="menu_gs25_date_check_root"
         action="action_gs25_date_check_records"
+        groups="gs25_date_check.group_gs25_date_check_user"
         sequence="20"
     />
+
 </odoo>

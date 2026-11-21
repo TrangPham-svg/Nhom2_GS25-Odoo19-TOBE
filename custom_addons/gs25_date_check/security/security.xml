@@ -1,6 +1,98 @@
 <odoo>
+    <!-- Nhóm quyền nhân viên Date Check -->
+    <record id="group_gs25_date_check_user" model="res.groups">
+        <field name="name">GS25 Date Check User</field>
+        <field name="implied_ids"
+               eval="[(4, ref('base.group_user'))]"/>
+    </record>
+
     <!-- Nhóm quyền quản lý Date Check -->
     <record id="group_gs25_date_check_manager" model="res.groups">
         <field name="name">GS25 Date Check Manager</field>
+        <field name="implied_ids"
+               eval="[(4, ref('group_gs25_date_check_user'))]"/>
+    </record>
+
+    <!-- Nhân viên được truy cập phiếu do mình tạo -->
+    <record id="rule_gs25_date_check_user_own" model="ir.rule">
+        <field name="name">GS25 Date Check - Phiếu của nhân viên</field>
+        <field name="model_id"
+               ref="model_gs25_date_check_record"/>
+        <field name="groups"
+               eval="[(4, ref('group_gs25_date_check_user'))]"/>
+        <field name="domain_force">
+            [('create_uid', '=', user.id)]
+        </field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="True"/>
+        <field name="perm_unlink" eval="True"/>
+    </record>
+
+    <!-- Nhân viên được xem các phiếu đã xử lý -->
+    <record id="rule_gs25_date_check_user_done" model="ir.rule">
+        <field name="name">GS25 Date Check - Phiếu đã xử lý</field>
+        <field name="model_id"
+               ref="model_gs25_date_check_record"/>
+        <field name="groups"
+               eval="[(4, ref('group_gs25_date_check_user'))]"/>
+        <field name="domain_force">
+            [('state', '=', 'done')]
+        </field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Quản lý được xem tất cả phiếu kiểm tra -->
+    <record id="rule_gs25_date_check_manager_read" model="ir.rule">
+        <field name="name">GS25 Date Check - Quyền xem của quản lý</field>
+        <field name="model_id"
+               ref="model_gs25_date_check_record"/>
+        <field name="groups"
+               eval="[(4, ref('group_gs25_date_check_manager'))]"/>
+        <field name="domain_force">
+            [(1, '=', 1)]
+        </field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Quản lý được thực hiện các nghiệp vụ xử lý phiếu -->
+    <record id="rule_gs25_date_check_manager" model="ir.rule">
+        <field name="name">GS25 Date Check - Phiếu dành cho quản lý</field>
+        <field name="model_id"
+               ref="model_gs25_date_check_record"/>
+        <field name="groups"
+               eval="[(4, ref('group_gs25_date_check_manager'))]"/>
+        <field name="domain_force">
+            ['|',
+                ('state', 'in', ['waiting', 'approved', 'done', 'cancelled']),
+                ('returned_date', '!=', False)
+            ]
+        </field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="True"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Quản lý được xóa phiếu nháp chưa từng được trả lại -->
+    <record id="rule_gs25_date_check_manager_unlink" model="ir.rule">
+        <field name="name">GS25 Date Check - Quyền xóa bản nháp của quản lý</field>
+        <field name="model_id"
+               ref="model_gs25_date_check_record"/>
+        <field name="groups"
+               eval="[(4, ref('group_gs25_date_check_manager'))]"/>
+        <field name="domain_force">
+            [('state', '=', 'draft'), ('returned_date', '=', False)]
+        </field>
+        <field name="perm_read" eval="False"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="True"/>
     </record>
 </odoo>

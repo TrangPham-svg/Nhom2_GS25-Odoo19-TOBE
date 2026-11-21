@@ -1,52 +1,379 @@
 <odoo>
-    <!-- Hiển thị trạng thái trên biểu mẫu số lô -->
-    <record id="view_stock_lot_form_gs25_date_check" model="ir.ui.view">
-        <field name="name">stock.lot.form.gs25.date.check</field>
+    <!-- 1. HIỂN THỊ THÔNG TIN TRÊN SỐ LÔ                  -->
+    <record id="view_stock_lot_form_gs25_date_check"
+            model="ir.ui.view">
+
+        <field name="name">
+            stock.lot.form.gs25.date.check
+        </field>
+
         <field name="model">stock.lot</field>
-        <field name="inherit_id" ref="stock.view_production_lot_form"/>
+
+        <field name="inherit_id"
+               ref="stock.view_production_lot_form"/>
+
         <field name="arch" type="xml">
-            <xpath expr="//field[@name='expiration_date']" position="after">
-                <field name="gs25_expiry_status" readonly="1"/>
+
+            <xpath expr="//field[@name='expiration_date']"
+                   position="after">
+
+                <field name="gs25_expiry_status"
+                       readonly="1"
+                       widget="badge"
+                       decoration-success="gs25_expiry_status == 'normal'"
+                       decoration-warning="gs25_expiry_status == 'near_expiry'"
+                       decoration-danger="gs25_expiry_status == 'expired'"
+                       decoration-muted="gs25_expiry_status == 'no_date'"/>
+
+                <field name="gs25_nvt_quantity"
+                       readonly="1"/>
+
             </xpath>
+
+            <!-- Thông tin xử lý và lịch sử kiểm tra -->
+            <xpath expr="//sheet" position="inside">
+
+                <notebook groups="gs25_date_check.group_gs25_date_check_user">
+
+                    <!-- TAB PHƯƠNG ÁN XỬ LÝ -->
+                    <page string="Phương án xử lý"
+                          name="gs25_handling">
+
+                        <group>
+
+                            <group string="Thông tin xử lý">
+
+                                <field name="gs25_handling_status"
+                                       readonly="1"
+                                       widget="badge"
+                                       decoration-muted="gs25_handling_status == 'none'"
+                                       decoration-success="gs25_handling_status == 'priority_sale'"
+                                       decoration-info="gs25_handling_status == 'monitor'"
+                                       decoration-danger="gs25_handling_status == 'removed'"/>
+
+                                <field name="gs25_last_handling_date"
+                                       readonly="1"/>
+
+                                <field name="gs25_last_handling_user_id"
+                                       readonly="1"/>
+
+                            </group>
+
+                            <group string="Ưu tiên bán và theo dõi">
+
+                                <field name="gs25_priority_quantity"
+                                       readonly="1"
+                                       invisible="gs25_handling_status != 'priority_sale'"/>
+
+                                <field name="gs25_monitor_quantity"
+                                       readonly="1"
+                                       invisible="gs25_handling_status != 'monitor'"/>
+
+                                <field name="gs25_next_check_date"
+                                       readonly="1"
+                                       invisible="gs25_handling_status != 'monitor'"/>
+
+                                <field name="gs25_monitor_overdue"
+                                       readonly="1"
+                                       invisible="gs25_handling_status != 'monitor'"/>
+
+                            </group>
+
+                        </group>
+
+                        <!-- Cảnh báo quá hạn kiểm tra lại -->
+                        <div class="alert alert-danger"
+                             role="alert"
+                             invisible="not gs25_monitor_overdue">
+
+                            <strong>Quá hạn kiểm tra lại!</strong>
+
+                            Lô hàng này đã đến hoặc quá thời điểm
+                            kiểm tra lại. Vui lòng kiểm tra
+                            tình trạng hàng hóa thực tế.
+
+                        </div>
+
+                        <!-- Cảnh báo hàng đã hết hạn -->
+                        <div class="alert alert-warning"
+                             role="alert"
+                             invisible="gs25_expiry_status != 'expired'">
+
+                            <strong>Hàng hóa đã hết hạn sử dụng!</strong>
+
+                            Không được ưu tiên bán hoặc đưa
+                            hàng hóa hết hạn ra tiêu thụ.
+
+                        </div>
+
+                    </page>
+
+                    <!-- TAB LỊCH SỬ KIỂM TRA -->
+                    <page string="Lịch sử kiểm tra"
+                          name="gs25_date_check_history">
+
+                        <field name="gs25_date_check_record_ids"
+                               readonly="1">
+
+                            <list create="false"
+                                  edit="false"
+                                  delete="false">
+
+                                <field name="name"
+                                       string="Mã phiếu"/>
+
+                                <field name="check_date"/>
+
+                                <field name="checker_id"/>
+
+                                <field name="checked_quantity"/>
+
+                                <field name="quality_result"/>
+
+                                <field name="proposed_action"/>
+
+                                <field name="state"
+                                       widget="badge"
+                                       decoration-muted="state == 'draft'"
+                                       decoration-warning="state == 'waiting'"
+                                       decoration-info="state == 'approved'"
+                                       decoration-success="state == 'done'"
+                                       decoration-danger="state == 'cancelled'"/>
+
+                            </list>
+
+                        </field>
+
+                    </page>
+
+                </notebook>
+
+            </xpath>
+
         </field>
+
     </record>
 
-    <!-- Danh sách kiểm tra hạn sử dụng -->
-    <record id="view_gs25_date_check_list" model="ir.ui.view">
-        <field name="name">gs25.date.check.list</field>
+
+    <!-- 2. DANH SÁCH HÀNG CẬN HẠN VÀ HẾT HẠN              -->
+    <record id="view_gs25_date_check_list"
+            model="ir.ui.view">
+
+        <field name="name">
+            gs25.date.check.list
+        </field>
+
         <field name="model">stock.lot</field>
+
         <field name="arch" type="xml">
-            <list string="Kiểm tra hạn sử dụng" create="false">
-                <field name="name" string="Số lô"/>
-                <field name="product_id" string="Sản phẩm"/>
-                <field name="product_qty" string="Số lượng tồn"/>
-                <field name="expiration_date" string="Ngày hết hạn"/>
-                <field name="gs25_expiry_status" string="Trạng thái"/>
+
+            <list string="Kiểm tra hạn sử dụng"
+                  create="false"
+                  edit="false"
+                  delete="false"
+                  default_order="expiration_date asc"
+                  decoration-danger="gs25_expiry_status == 'expired'"
+                  decoration-warning="gs25_expiry_status == 'near_expiry'">
+
+                <field name="name"
+                       string="Số lô"/>
+
+                <field name="product_id"
+                       string="Sản phẩm"/>
+
+                <field name="gs25_nvt_quantity"
+                       string="Tồn kho Nguyễn Văn Trỗi"/>
+
+                <field name="expiration_date"
+                       string="Ngày hết hạn"/>
+
+                <field name="gs25_expiry_status"
+                       string="Trạng thái hạn sử dụng"
+                       widget="badge"
+                       decoration-success="gs25_expiry_status == 'normal'"
+                       decoration-warning="gs25_expiry_status == 'near_expiry'"
+                       decoration-danger="gs25_expiry_status == 'expired'"
+                       decoration-muted="gs25_expiry_status == 'no_date'"/>
+
+                <field name="gs25_handling_status"
+                       string="Xử lý gần nhất"
+                       widget="badge"
+                       decoration-muted="gs25_handling_status == 'none'"
+                       decoration-success="gs25_handling_status == 'priority_sale'"
+                       decoration-info="gs25_handling_status == 'monitor'"
+                       decoration-danger="gs25_handling_status == 'removed'"/>
+
+                <field name="gs25_priority_quantity"
+                       string="SL ưu tiên bán"
+                       optional="hide"/>
+
+                <field name="gs25_monitor_quantity"
+                       string="SL theo dõi"
+                       optional="hide"/>
+
+                <field name="gs25_next_check_date"
+                       string="Kiểm tra lại"
+                       optional="show"/>
+
+                <field name="gs25_monitor_overdue"
+                       string="Quá hạn kiểm tra"
+                       optional="show"/>
+
+                <field name="gs25_last_handling_date"
+                       string="Xử lý gần nhất lúc"
+                       optional="hide"/>
+
+                <field name="gs25_last_handling_user_id"
+                       string="Người xử lý"
+                       optional="hide"/>
+
             </list>
+
         </field>
+
     </record>
 
-    <!-- Mở danh sách lô cận hạn và hết hạn -->
-    <record id="action_gs25_date_check" model="ir.actions.act_window">
-        <field name="name">GS25 Date Check</field>
+
+    <!-- 3. BỘ LỌC TÌM KIẾM                                -->
+    <record id="view_gs25_date_check_search"
+            model="ir.ui.view">
+
+        <field name="name">
+            gs25.date.check.search
+        </field>
+
+        <field name="model">stock.lot</field>
+
+        <field name="arch" type="xml">
+
+            <search string="Tìm kiếm hàng hóa">
+
+                <!-- Tìm kiếm thông tin cơ bản -->
+                <field name="name"
+                       string="Số lô"/>
+
+                <field name="product_id"
+                       string="Sản phẩm"/>
+
+
+                <!-- BỘ LỌC HẠN SỬ DỤNG -->
+
+                <filter name="near_expiry"
+                        string="Hàng cận hạn"
+                        domain="[('gs25_expiry_status', 'in', ['near_expiry'])]"/>
+
+                <filter name="expired"
+                        string="Hàng hết hạn"
+                        domain="[('gs25_expiry_status', 'in', ['expired'])]"/>
+
+                <separator/>
+
+
+                <!-- BỘ LỌC PHƯƠNG ÁN XỬ LÝ -->
+
+                <filter name="not_handled"
+                        string="Chưa xử lý"
+                        domain="[('gs25_handling_status', 'in', [False, 'none'])]"/>
+
+                <filter name="priority_sale"
+                        string="Ưu tiên bán"
+                        domain="[
+                            ('gs25_handling_status', '=', 'priority_sale'),
+                            ('gs25_expiry_status', 'in', ['near_expiry', 'normal'])
+                        ]"/>
+
+                <filter name="monitor"
+                        string="Đang theo dõi"
+                        domain="[('gs25_handling_status', '=', 'monitor')]"/>
+
+                <filter name="removed"
+                        string="Đã thực hiện loại bỏ"
+                        domain="[('gs25_handling_status', '=', 'removed')]"/>
+
+                <separator/>
+
+
+                <!-- BỘ LỌC KIỂM TRA LẠI -->
+
+                <filter name="monitor_overdue"
+                        string="Quá hạn kiểm tra lại"
+                        domain="[
+                            ('gs25_handling_status', '=', 'monitor'),
+                            ('gs25_next_check_date', '!=', False),
+                            ('gs25_next_check_date', '&lt;=', 'now')
+                        ]"/>
+
+                <separator/>
+
+
+                <!-- NHÓM DỮ LIỆU -->
+
+                <group>
+
+                    <filter name="group_by_product"
+                            string="Sản phẩm"
+                            context="{'group_by': 'product_id'}"/>
+
+                    <filter name="group_by_handling"
+                            string="Phương án xử lý"
+                            context="{'group_by': 'gs25_handling_status'}"/>
+
+                </group>
+
+            </search>
+
+        </field>
+
+    </record>
+
+
+    <!-- 4. ACTION DANH SÁCH DATE CHECK                    -->
+    <record id="action_gs25_date_check"
+            model="ir.actions.act_window">
+
+        <field name="name">Kiểm tra hạn sử dụng</field>
+
         <field name="res_model">stock.lot</field>
+
         <field name="view_mode">list,form</field>
-        <field name="view_id" ref="view_gs25_date_check_list"/>
-        <field name="domain">[('expiration_date', '!=', False), ('expiration_date', '&lt;=', (context_today() + datetime.timedelta(days=2)).strftime('%Y-%m-%d 23:59:59'))]</field>
+
+        <field name="view_id"
+               ref="view_gs25_date_check_list"/>
+
+        <field name="search_view_id"
+               ref="view_gs25_date_check_search"/>
+
+        <!-- Chỉ hiển thị hàng còn tồn kho tại NVT -->
+        <field name="domain">
+            [('gs25_nvt_quantity', '>', 0)]
+        </field>
+
+        <!-- Mặc định hiển thị hàng cận hạn và hết hạn -->
+        <field name="context">
+            {
+                'search_default_near_expiry': 1,
+                'search_default_expired': 1
+            }
+        </field>
+
     </record>
 
-    <!-- Menu quản lý Date Check -->
+
+    <!-- 5. MENU GS25 DATE CHECK                            -->
     <menuitem
         id="menu_gs25_date_check_root"
         name="GS25 Date Check"
+        groups="gs25_date_check.group_gs25_date_check_user"
         sequence="50"
     />
 
     <menuitem
         id="menu_gs25_date_check_lots"
-        name="Danh sách hàng cận hạn"
+        name="Kiểm tra hạn sử dụng"
         parent="menu_gs25_date_check_root"
         action="action_gs25_date_check"
+        groups="gs25_date_check.group_gs25_date_check_user"
         sequence="10"
     />
+
 </odoo>

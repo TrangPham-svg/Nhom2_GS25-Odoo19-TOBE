@@ -1,2 +1,4 @@
 id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
-access_gs25_date_check_record_user,gs25.date.check.record.user,model_gs25_date_check_record,base.group_user,1,1,1,0
+access_gs25_date_check_record_user,gs25.date.check.record.user,model_gs25_date_check_record,gs25_date_check.group_gs25_date_check_user,1,1,1,1
+access_gs25_date_check_cancel_wizard_manager,gs25.date.check.cancel.wizard.manager,model_gs25_date_check_cancel_wizard,gs25_date_check.group_gs25_date_check_manager,1,1,1,1
+access_gs25_date_check_process_wizard_manager,gs25.date.check.process.wizard.manager,model_gs25_date_check_process_wizard,gs25_date_check.group_gs25_date_check_manager,1,1,1,1
