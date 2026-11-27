@@ -1,0 +1,230 @@
+<odoo>
+    <!-- 1. A11. NÚT GỬI KHO TỔNG VÀ MÔ PHỎNG PHẢN HỒI TRÊN ĐƠN ĐẶT HÀNG -->
+    <record id="view_purchase_order_form_gs25_replenishment"
+            model="ir.ui.view">
+        <field name="name">purchase.order.form.gs25.replenishment</field>
+        <field name="model">purchase.order</field>
+        <field name="inherit_id" ref="purchase.purchase_order_form"/>
+        <field name="arch" type="xml">
+
+            <xpath expr="//header" position="inside">
+
+                <field name="gs25_is_replenishment" invisible="1"/>
+                <field name="gs25_dw_state" invisible="1"/>
+
+                <!-- Cửa hàng gửi đơn -->
+                <button name="action_gs25_send_to_central"
+                        type="object"
+                        string="Gửi kho tổng"
+                        class="btn-primary"
+                        groups="gs25_replenishment.group_gs25_replenishment_manager"
+                        invisible="not gs25_is_replenishment or gs25_dw_state != 'not_sent' or state not in ('draft', 'sent')"
+                        confirm="Đơn sẽ được xác nhận và gửi đến kho tổng. Tiếp tục?"/>
+
+                <!-- Kho tổng (mô phỏng) phản hồi -->
+                <button name="action_gs25_dw_receive"
+                        type="object"
+                        string="Kho tổng: Tiếp nhận đơn"
+                        class="btn-secondary"
+                        groups="gs25_replenishment.group_gs25_replenishment_central"
+                        invisible="not gs25_is_replenishment or gs25_dw_state != 'sent'"/>
+
+                <button name="action_gs25_dw_confirm"
+                        type="object"
+                        string="Kho tổng: Xác nhận đủ hàng"
+                        class="btn-secondary"
+                        groups="gs25_replenishment.group_gs25_replenishment_central"
+                        invisible="not gs25_is_replenishment or gs25_dw_state != 'received'"/>
+
+                <button name="action_gs25_open_dw_response_wizard"
+                        type="object"
+                        string="Kho tổng: Xác nhận một phần"
+                        class="btn-secondary"
+                        context="{'gs25_response_mode': 'partial'}"
+                        groups="gs25_replenishment.group_gs25_replenishment_central"
+                        invisible="not gs25_is_replenishment or gs25_dw_state != 'received'"/>
+
+                <button name="action_gs25_open_dw_response_wizard"
+                        type="object"
+                        string="Kho tổng: Từ chối"
+                        class="btn-secondary text-danger"
+                        context="{'gs25_response_mode': 'reject'}"
+                        groups="gs25_replenishment.group_gs25_replenishment_central"
+                        invisible="not gs25_is_replenishment or gs25_dw_state not in ('sent', 'received')"/>
+
+                <button name="action_gs25_dw_ship"
+                        type="object"
+                        string="Kho tổng: Xuất giao hàng"
+                        class="btn-secondary"
+                        groups="gs25_replenishment.group_gs25_replenishment_central"
+                        invisible="not gs25_is_replenishment or gs25_dw_state not in ('confirmed', 'partial')"/>
+
+            </xpath>
+
+            <xpath expr="//div[@name='button_box']" position="inside">
+
+                <button name="action_gs25_view_proposal"
+                        type="object"
+                        class="oe_stat_button"
+                        icon="fa-list-alt"
+                        invisible="not gs25_is_replenishment">
+                    <div class="o_stat_info">
+                        <span class="o_stat_text">Phiếu đề xuất</span>
+                    </div>
+                </button>
+
+            </xpath>
+
+            <xpath expr="//notebook" position="inside">
+
+                <page string="Kho tổng GS25"
+                      name="gs25_central"
+                      invisible="not gs25_is_replenishment">
+
+                    <group>
+
+                        <group string="Trạng thái phía kho tổng">
+
+                            <field name="gs25_proposal_id" readonly="1"/>
+
+                            <field name="gs25_dw_state"
+                                   readonly="1"
+                                   widget="badge"
+                                   decoration-muted="gs25_dw_state == 'not_sent'"
+                                   decoration-info="gs25_dw_state in ('sent', 'received')"
+                                   decoration-success="gs25_dw_state in ('confirmed', 'shipping')"
+                                   decoration-warning="gs25_dw_state == 'partial'"
+                                   decoration-danger="gs25_dw_state == 'rejected'"/>
+
+                        </group>
+
+                        <group string="Thời điểm">
+
+                            <field name="gs25_dw_sent_date" readonly="1"/>
+                            <field name="gs25_dw_response_date" readonly="1"/>
+
+                        </group>
+
+                    </group>
+
+                    <group string="Phản hồi của kho tổng"
+                           invisible="not gs25_dw_note">
+
+                        <field name="gs25_dw_note"
+                               nolabel="1"
+                               colspan="2"
+                               readonly="1"/>
+
+                    </group>
+
+                    <field name="gs25_dw_log_ids" readonly="1">
+
+                        <list create="false" edit="false" delete="false">
+                            <field name="date"/>
+                            <field name="state" widget="badge"/>
+                            <field name="user_id"/>
+                            <field name="note"/>
+                        </list>
+
+                    </field>
+
+                </page>
+
+            </xpath>
+
+        </field>
+    </record>
+
+
+    <!-- 2. DANH SÁCH ĐƠN ĐẶT HÀNG KHO TỔNG -->
+    <record id="view_purchase_order_list_gs25_replenishment"
+            model="ir.ui.view">
+        <field name="name">purchase.order.list.gs25.replenishment</field>
+        <field name="model">purchase.order</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <list string="Đơn đặt hàng kho tổng" create="false">
+
+                <field name="name"/>
+                <field name="gs25_proposal_id"/>
+                <field name="date_order"/>
+                <field name="partner_id"/>
+                <field name="picking_type_id" optional="hide"/>
+                <field name="gs25_dw_sent_date" optional="show"/>
+                <field name="amount_total" optional="hide"/>
+                <field name="state" widget="badge" optional="show"/>
+
+                <field name="gs25_dw_state"
+                       widget="badge"
+                       decoration-muted="gs25_dw_state == 'not_sent'"
+                       decoration-info="gs25_dw_state in ('sent', 'received')"
+                       decoration-success="gs25_dw_state in ('confirmed', 'shipping')"
+                       decoration-warning="gs25_dw_state == 'partial'"
+                       decoration-danger="gs25_dw_state == 'rejected'"/>
+
+            </list>
+
+        </field>
+    </record>
+
+    <record id="view_purchase_order_search_gs25_replenishment"
+            model="ir.ui.view">
+        <field name="name">purchase.order.search.gs25.replenishment</field>
+        <field name="model">purchase.order</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <search string="Đơn đặt hàng kho tổng">
+
+                <field name="name"/>
+                <field name="gs25_proposal_id"/>
+                <field name="product_id"/>
+
+                <filter name="not_sent" string="Chưa gửi"
+                        domain="[('gs25_dw_state', '=', 'not_sent')]"/>
+                <filter name="waiting_central" string="Chờ kho tổng xử lý"
+                        domain="[('gs25_dw_state', 'in', ['sent', 'received'])]"/>
+                <filter name="confirmed" string="Kho tổng đã xác nhận"
+                        domain="[('gs25_dw_state', 'in', ['confirmed', 'partial'])]"/>
+                <filter name="shipping" string="Đang giao"
+                        domain="[('gs25_dw_state', '=', 'shipping')]"/>
+                <filter name="rejected" string="Bị từ chối"
+                        domain="[('gs25_dw_state', '=', 'rejected')]"/>
+
+                <group>
+                    <filter name="group_by_dw_state" string="Trạng thái kho tổng"
+                            context="{'group_by': 'gs25_dw_state'}"/>
+                </group>
+
+            </search>
+
+        </field>
+    </record>
+
+
+    <!-- 3. ACTION VÀ MENU -->
+    <record id="action_gs25_replenishment_purchase_orders"
+            model="ir.actions.act_window">
+        <field name="name">Đơn đặt hàng kho tổng</field>
+        <field name="res_model">purchase.order</field>
+        <field name="view_mode">list,form</field>
+        <field name="domain">[('gs25_proposal_id', '!=', False)]</field>
+        <field name="context">{'create': False}</field>
+        <field name="search_view_id" ref="view_purchase_order_search_gs25_replenishment"/>
+        <field name="view_ids"
+               eval="[(5, 0, 0),
+                      (0, 0, {'view_mode': 'list', 'view_id': ref('view_purchase_order_list_gs25_replenishment')}),
+                      (0, 0, {'view_mode': 'form', 'view_id': ref('purchase.purchase_order_form')})]"/>
+    </record>
+
+    <menuitem
+        id="menu_gs25_replenishment_purchase_orders"
+        name="Đơn đặt hàng kho tổng"
+        parent="menu_gs25_replenishment_operations"
+        action="action_gs25_replenishment_purchase_orders"
+        groups="gs25_replenishment.group_gs25_replenishment_manager,gs25_replenishment.group_gs25_replenishment_central"
+        sequence="40"
+    />
+
+</odoo>

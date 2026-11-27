@@ -1,0 +1,11 @@
+<odoo>
+    <data noupdate="1">
+        <!-- A01. Kho tổng GS25 được mô phỏng như nhà cung cấp nhận đơn đặt hàng -->
+        <record id="res_partner_gs25_central_warehouse" model="res.partner">
+            <field name="name">Kho tổng GS25 (mô phỏng)</field>
+            <field name="is_company" eval="True"/>
+            <field name="supplier_rank">1</field>
+            <field name="comment">Đối tác mô phỏng kho tổng DW nhận đơn đặt hàng bổ sung từ cửa hàng.</field>
+        </record>
+    </data>
+</odoo>

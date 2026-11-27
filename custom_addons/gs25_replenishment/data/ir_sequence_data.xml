@@ -1,0 +1,27 @@
+<odoo>
+    <data noupdate="1">
+        <!-- Mã phiếu import dữ liệu bán hàng POS -->
+        <record id="seq_gs25_pos_sale_import" model="ir.sequence">
+            <field name="name">GS25 POS Sale Import</field>
+            <field name="code">gs25.pos.sale.import</field>
+            <field name="prefix">POS-</field>
+            <field name="padding">3</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="company_id" eval="False"/>
+        </record>
+
+        <!-- Mã phiếu đề xuất đặt hàng bổ sung -->
+        <record id="seq_gs25_replenishment_proposal" model="ir.sequence">
+            <field name="name">GS25 Replenishment Proposal</field>
+            <field name="code">gs25.replenishment.proposal</field>
+            <field name="prefix">DX-</field>
+            <field name="padding">3</field>
+            <field name="number_next">1</field>
+            <field name="number_increment">1</field>
+            <field name="implementation">standard</field>
+            <field name="company_id" eval="False"/>
+        </record>
+    </data>
+</odoo>

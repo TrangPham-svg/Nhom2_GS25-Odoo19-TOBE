@@ -1,0 +1,76 @@
+<odoo>
+    <!-- Nhóm quyền nhân viên cửa hàng: import bán hàng, kiểm tra tồn, lập đề xuất -->
+    <record id="group_gs25_replenishment_user" model="res.groups">
+        <field name="name">GS25 Replenishment User</field>
+        <field name="implied_ids"
+               eval="[(4, ref('base.group_user')), (4, ref('stock.group_stock_user'))]"/>
+    </record>
+
+    <!-- Nhóm quyền quản lý cửa hàng: thiết lập mức tồn, duyệt đề xuất, tạo đơn -->
+    <record id="group_gs25_replenishment_manager" model="res.groups">
+        <field name="name">GS25 Replenishment Manager</field>
+        <field name="implied_ids"
+               eval="[(4, ref('group_gs25_replenishment_user')), (4, ref('purchase.group_purchase_user'))]"/>
+    </record>
+
+    <!-- Nhóm quyền kho tổng (mô phỏng): tiếp nhận và phản hồi đơn đặt hàng -->
+    <record id="group_gs25_replenishment_central" model="res.groups">
+        <field name="name">GS25 Kho tổng (mô phỏng)</field>
+        <field name="implied_ids"
+               eval="[(4, ref('base.group_user')), (4, ref('purchase.group_purchase_user'))]"/>
+    </record>
+
+    <!-- Quản trị hệ thống có đầy đủ quyền quản lý đặt hàng bổ sung -->
+    <record id="base.group_system" model="res.groups">
+        <field name="implied_ids"
+               eval="[(4, ref('group_gs25_replenishment_manager'))]"/>
+    </record>
+
+    <!-- Chỉ truy cập dữ liệu của công ty đang làm việc -->
+    <record id="rule_gs25_pos_sale_import_company" model="ir.rule">
+        <field name="name">GS25 POS Import - Theo công ty</field>
+        <field name="model_id" ref="model_gs25_pos_sale_import"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_gs25_pos_sale_line_company" model="ir.rule">
+        <field name="name">GS25 POS Sale Line - Theo công ty</field>
+        <field name="model_id" ref="model_gs25_pos_sale_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_gs25_replenishment_proposal_company" model="ir.rule">
+        <field name="name">GS25 Replenishment - Phiếu đề xuất theo công ty</field>
+        <field name="model_id" ref="model_gs25_replenishment_proposal"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <record id="rule_gs25_replenishment_proposal_line_company" model="ir.rule">
+        <field name="name">GS25 Replenishment - Dòng đề xuất theo công ty</field>
+        <field name="model_id" ref="model_gs25_replenishment_proposal_line"/>
+        <field name="domain_force">[('company_id', 'in', company_ids)]</field>
+    </record>
+
+    <!-- Kho tổng chỉ xem phiếu đề xuất đã tạo đơn đặt hàng -->
+    <record id="rule_gs25_replenishment_proposal_central" model="ir.rule">
+        <field name="name">GS25 Replenishment - Kho tổng xem phiếu đã đặt hàng</field>
+        <field name="model_id" ref="model_gs25_replenishment_proposal"/>
+        <field name="groups"
+               eval="[(4, ref('group_gs25_replenishment_central'))]"/>
+        <field name="domain_force">[('state', '=', 'ordered')]</field>
+        <field name="perm_read" eval="True"/>
+        <field name="perm_write" eval="False"/>
+        <field name="perm_create" eval="False"/>
+        <field name="perm_unlink" eval="False"/>
+    </record>
+
+    <!-- Nhân viên và quản lý cửa hàng xem tất cả phiếu đề xuất của cửa hàng.
+         Quyền chỉnh sửa theo trạng thái được kiểm soát trong model. -->
+    <record id="rule_gs25_replenishment_proposal_store" model="ir.rule">
+        <field name="name">GS25 Replenishment - Cửa hàng xem phiếu đề xuất</field>
+        <field name="model_id" ref="model_gs25_replenishment_proposal"/>
+        <field name="groups"
+               eval="[(4, ref('group_gs25_replenishment_user'))]"/>
+        <field name="domain_force">[(1, '=', 1)]</field>
+    </record>
+</odoo>
