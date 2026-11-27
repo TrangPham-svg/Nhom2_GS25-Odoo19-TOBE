@@ -1,0 +1,478 @@
+<odoo>
+    <!-- 1. A07. DANH SÁCH PHIẾU ĐỀ XUẤT ĐẶT HÀNG -->
+    <record id="view_gs25_replenishment_proposal_list" model="ir.ui.view">
+        <field name="name">gs25.replenishment.proposal.list</field>
+        <field name="model">gs25.replenishment.proposal</field>
+        <field name="arch" type="xml">
+
+            <list string="Phiếu đề xuất đặt hàng"
+                  create="false"
+                  decoration-muted="state in ('cancelled', 'rejected')">
+
+                <field name="name"/>
+                <field name="proposal_date"/>
+                <field name="warehouse_id" optional="hide"/>
+                <field name="requested_by_id"/>
+                <field name="source" optional="show"/>
+                <field name="line_count"/>
+                <field name="total_suggested_qty"/>
+                <field name="total_approved_qty"/>
+                <field name="adjusted_line_count" optional="hide"/>
+                <field name="approved_by_id" optional="hide"/>
+                <field name="purchase_id" optional="show"/>
+                <field name="dw_state" optional="show" widget="badge"/>
+
+                <field name="state"
+                       widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-warning="state == 'waiting'"
+                       decoration-info="state == 'approved'"
+                       decoration-success="state == 'ordered'"
+                       decoration-danger="state in ('rejected', 'cancelled')"/>
+
+            </list>
+
+        </field>
+    </record>
+
+
+    <!-- 2. CHI TIẾT PHIẾU ĐỀ XUẤT -->
+    <record id="view_gs25_replenishment_proposal_form" model="ir.ui.view">
+        <field name="name">gs25.replenishment.proposal.form</field>
+        <field name="model">gs25.replenishment.proposal</field>
+        <field name="arch" type="xml">
+
+            <form string="Phiếu đề xuất đặt hàng" create="false">
+
+                <!-- CÁC NÚT XỬ LÝ NGHIỆP VỤ -->
+                <header>
+
+                    <button name="action_submit"
+                            type="object"
+                            string="Gửi quản lý duyệt"
+                            class="btn-primary"
+                            invisible="not can_edit_draft"/>
+
+                    <button name="action_refresh_lines"
+                            type="object"
+                            string="Cập nhật số liệu tồn"
+                            class="btn-secondary"
+                            invisible="not can_edit_draft"/>
+
+                    <button name="action_cancel"
+                            type="object"
+                            string="Hủy phiếu"
+                            class="btn-secondary text-danger"
+                            invisible="not can_edit_draft"
+                            confirm="Bạn có chắc chắn muốn hủy phiếu đề xuất này không?"/>
+
+                    <!-- A09. Quản lý xác nhận hoặc từ chối -->
+                    <button name="action_approve"
+                            type="object"
+                            string="Duyệt đề xuất"
+                            class="btn-primary"
+                            groups="gs25_replenishment.group_gs25_replenishment_manager"
+                            invisible="state != 'waiting'"/>
+
+                    <button name="action_open_reject_wizard"
+                            type="object"
+                            string="Từ chối"
+                            class="btn-secondary text-danger"
+                            groups="gs25_replenishment.group_gs25_replenishment_manager"
+                            invisible="state != 'waiting'"/>
+
+                    <!-- A10. Tạo đơn đặt hàng điện tử -->
+                    <button name="action_create_purchase_order"
+                            type="object"
+                            string="Tạo đơn đặt hàng"
+                            class="btn-primary"
+                            groups="gs25_replenishment.group_gs25_replenishment_manager"
+                            invisible="state != 'approved'"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           readonly="1"
+                           statusbar_visible="draft,waiting,approved,ordered"/>
+
+                </header>
+
+                <sheet>
+
+                    <!-- TRƯỜNG KỸ THUẬT KIỂM SOÁT QUYỀN -->
+                    <field name="can_edit_draft" invisible="1"/>
+                    <field name="can_review" invisible="1"/>
+
+                    <div class="oe_button_box" name="button_box">
+
+                        <button name="action_view_purchase_order"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-shopping-cart"
+                                invisible="not purchase_id"
+                                groups="purchase.group_purchase_user">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Đơn đặt hàng</span>
+                            </div>
+                        </button>
+
+                    </div>
+
+                    <!-- THÔNG BÁO THEO TRẠNG THÁI -->
+                    <div class="alert alert-info"
+                         role="alert"
+                         invisible="state != 'draft'">
+                        <strong>Kiểm tra danh sách đề xuất.</strong>
+                        Có thể bỏ sản phẩm không cần đặt và
+                        cập nhật lại số liệu tồn trước khi gửi quản lý.
+                    </div>
+
+                    <div class="alert alert-warning"
+                         role="alert"
+                         invisible="not can_review">
+                        <strong>Quản lý kiểm tra và điều chỉnh số lượng.</strong>
+                        Nhập "SL duyệt" cho từng sản phẩm. Khi SL duyệt khác
+                        SL hệ thống đề xuất, bắt buộc nhập lý do điều chỉnh.
+                    </div>
+
+                    <div class="alert alert-success"
+                         role="alert"
+                         invisible="state != 'approved'">
+                        <strong>Đề xuất đã được duyệt.</strong>
+                        Vui lòng tạo đơn đặt hàng điện tử gửi kho tổng.
+                    </div>
+
+                    <div class="alert alert-danger"
+                         role="alert"
+                         invisible="state != 'rejected'">
+                        <strong>Đề xuất bị từ chối.</strong>
+                        Lý do: <field name="reject_reason" readonly="1" class="d-inline"/>
+                    </div>
+
+                    <!-- 3. THÔNG TIN PHIẾU -->
+                    <group>
+
+                        <group>
+                            <field name="name" readonly="1"/>
+                            <field name="warehouse_id" readonly="1"/>
+                            <field name="location_id" readonly="1"/>
+                            <field name="proposal_date" readonly="1"/>
+                        </group>
+
+                        <group>
+                            <field name="requested_by_id" readonly="1"/>
+                            <field name="source" readonly="1"/>
+                            <field name="purchase_id"
+                                   readonly="1"
+                                   invisible="not purchase_id"/>
+                            <field name="dw_state"
+                                   readonly="1"
+                                   widget="badge"
+                                   invisible="not purchase_id"/>
+                        </group>
+
+                    </group>
+
+                    <!-- 4. A07. TỔNG HỢP -->
+                    <group string="Tổng hợp đề xuất">
+
+                        <group>
+                            <field name="line_count"/>
+                            <field name="total_suggested_qty"/>
+                        </group>
+
+                        <group>
+                            <field name="total_approved_qty"/>
+                            <field name="adjusted_line_count"/>
+                        </group>
+
+                    </group>
+
+                    <notebook>
+
+                        <!-- 5. A05-A08. DANH SÁCH SẢN PHẨM ĐỀ XUẤT -->
+                        <page string="Sản phẩm đề xuất" name="lines">
+
+                            <field name="line_ids"
+                                   readonly="not can_edit_draft and not can_review">
+
+                                <list create="false"
+                                      editable="bottom"
+                                      delete="1"
+                                      decoration-warning="is_adjusted">
+
+                                    <field name="product_id" readonly="1"/>
+                                    <field name="on_hand_qty"/>
+                                    <field name="incoming_qty" optional="show"/>
+                                    <field name="outgoing_qty" optional="hide"/>
+                                    <field name="forecast_qty"/>
+                                    <field name="min_qty"/>
+                                    <field name="max_qty"/>
+                                    <field name="avg_daily_sales"/>
+                                    <field name="pack_qty" optional="hide"/>
+                                    <field name="suggested_qty"/>
+
+                                    <field name="approved_qty"
+                                           readonly="not parent.can_review"/>
+
+                                    <field name="adjust_reason"
+                                           readonly="not parent.can_review"
+                                           required="is_adjusted and parent.can_review"/>
+
+                                    <field name="uom_id" optional="show"/>
+                                    <field name="is_adjusted" column_invisible="1"/>
+
+                                </list>
+
+                            </field>
+
+                        </page>
+
+                        <!-- 6. GHI CHÚ VÀ THÔNG TIN DUYỆT -->
+                        <page string="Ghi chú &amp; duyệt" name="review">
+
+                            <group>
+
+                                <field name="note"
+                                       readonly="not can_edit_draft"
+                                       placeholder="Ghi chú của nhân viên..."/>
+
+                                <field name="manager_note"
+                                       readonly="not can_review"
+                                       placeholder="Ghi chú của quản lý..."/>
+
+                            </group>
+
+                            <group>
+
+                                <group string="Thông tin duyệt">
+                                    <field name="submitted_date" readonly="1"/>
+                                    <field name="approved_by_id" readonly="1"/>
+                                    <field name="approved_date" readonly="1"/>
+                                </group>
+
+                                <group string="Thông tin từ chối"
+                                       invisible="state != 'rejected'">
+                                    <field name="rejected_by_id" readonly="1"/>
+                                    <field name="rejected_date" readonly="1"/>
+                                </group>
+
+                            </group>
+
+                        </page>
+
+                        <!-- 7. THAM SỐ TÍNH ĐỀ XUẤT -->
+                        <page string="Tham số tính toán" name="params">
+
+                            <group>
+                                <field name="sales_history_days" readonly="1"/>
+                                <field name="lead_days" readonly="1"/>
+                                <field name="coverage_days" readonly="1"/>
+                            </group>
+
+                            <div class="text-muted">
+                                SL đề xuất = max(Tồn tối đa, Tồn tối thiểu +
+                                Bán TB/ngày × (Thời gian giao + Số ngày dự trữ))
+                                − Tồn dự báo, làm tròn lên theo bội số đặt hàng.
+                                Tồn dự báo = Tồn hiện có + Sắp nhập − Sắp xuất.
+                            </div>
+
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+
+                <chatter/>
+
+            </form>
+
+        </field>
+    </record>
+
+
+    <!-- 8. BỘ LỌC PHIẾU ĐỀ XUẤT -->
+    <record id="view_gs25_replenishment_proposal_search" model="ir.ui.view">
+        <field name="name">gs25.replenishment.proposal.search</field>
+        <field name="model">gs25.replenishment.proposal</field>
+        <field name="arch" type="xml">
+
+            <search string="Tìm kiếm phiếu đề xuất">
+
+                <field name="name"/>
+                <field name="requested_by_id"/>
+                <field name="line_ids" string="Sản phẩm"
+                       filter_domain="[('line_ids.product_id', 'ilike', self)]"/>
+                <field name="purchase_id"/>
+
+                <filter name="unfinished" string="Chưa hoàn thành"
+                        domain="[('state', 'in', ['draft', 'waiting', 'approved'])]"/>
+                <filter name="draft" string="Nháp"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="waiting" string="Chờ duyệt"
+                        domain="[('state', '=', 'waiting')]"/>
+                <filter name="approved" string="Đã duyệt"
+                        domain="[('state', '=', 'approved')]"/>
+                <filter name="ordered" string="Đã tạo đơn"
+                        domain="[('state', '=', 'ordered')]"/>
+                <filter name="rejected" string="Bị từ chối"
+                        domain="[('state', '=', 'rejected')]"/>
+
+                <separator/>
+
+                <filter name="my_proposals" string="Phiếu của tôi"
+                        domain="[('requested_by_id', '=', uid)]"/>
+                <filter name="from_cron" string="Hệ thống tự động lập"
+                        domain="[('source', '=', 'cron')]"/>
+
+                <separator/>
+
+                <filter name="filter_proposal_date" string="Ngày đề xuất"
+                        date="proposal_date"/>
+
+                <group>
+                    <filter name="group_by_state" string="Trạng thái"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_by_requester" string="Người lập"
+                            context="{'group_by': 'requested_by_id'}"/>
+                    <filter name="group_by_date" string="Ngày đề xuất"
+                            context="{'group_by': 'proposal_date:day'}"/>
+                </group>
+
+            </search>
+
+        </field>
+    </record>
+
+
+    <!-- 9. A07. TỔNG HỢP DÒNG ĐỀ XUẤT THEO SẢN PHẨM -->
+    <record id="view_gs25_replenishment_proposal_line_list" model="ir.ui.view">
+        <field name="name">gs25.replenishment.proposal.line.list</field>
+        <field name="model">gs25.replenishment.proposal.line</field>
+        <field name="arch" type="xml">
+
+            <list string="Tổng hợp đề xuất"
+                  create="false" edit="false" delete="false"
+                  decoration-warning="is_adjusted">
+
+                <field name="proposal_id"/>
+                <field name="proposal_date"/>
+                <field name="product_id"/>
+                <field name="on_hand_qty"/>
+                <field name="forecast_qty"/>
+                <field name="min_qty"/>
+                <field name="avg_daily_sales" optional="show"/>
+                <field name="suggested_qty" sum="Tổng"/>
+                <field name="approved_qty" sum="Tổng"/>
+                <field name="adjust_reason" optional="show"/>
+                <field name="uom_id" optional="hide"/>
+                <field name="is_adjusted" column_invisible="1"/>
+                <field name="proposal_state" widget="badge"
+                       decoration-warning="proposal_state == 'waiting'"
+                       decoration-success="proposal_state == 'ordered'"
+                       decoration-danger="proposal_state in ('rejected', 'cancelled')"/>
+
+            </list>
+
+        </field>
+    </record>
+
+    <record id="view_gs25_replenishment_proposal_line_pivot" model="ir.ui.view">
+        <field name="name">gs25.replenishment.proposal.line.pivot</field>
+        <field name="model">gs25.replenishment.proposal.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Tổng hợp đề xuất">
+                <field name="product_id" type="row"/>
+                <field name="proposal_state" type="col"/>
+                <field name="suggested_qty" type="measure"/>
+                <field name="approved_qty" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_gs25_replenishment_proposal_line_search" model="ir.ui.view">
+        <field name="name">gs25.replenishment.proposal.line.search</field>
+        <field name="model">gs25.replenishment.proposal.line</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm dòng đề xuất">
+                <field name="product_id"/>
+                <field name="proposal_id"/>
+                <filter name="open" string="Đang xử lý"
+                        domain="[('proposal_state', 'in', ['draft', 'waiting', 'approved'])]"/>
+                <filter name="adjusted" string="Quản lý đã điều chỉnh"
+                        domain="[('is_adjusted', '=', True)]"/>
+                <filter name="filter_proposal_date" string="Ngày đề xuất"
+                        date="proposal_date"/>
+                <group>
+                    <filter name="group_by_product" string="Sản phẩm"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter name="group_by_proposal" string="Phiếu đề xuất"
+                            context="{'group_by': 'proposal_id'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+
+    <!-- 10. ACTION VÀ MENU -->
+    <record id="action_gs25_generate_proposal" model="ir.actions.server">
+        <field name="name">Kiểm tra tồn kho &amp; lập đề xuất</field>
+        <field name="model_id" ref="model_gs25_replenishment_proposal"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_gs25_generate_proposal()</field>
+    </record>
+
+    <record id="action_gs25_replenishment_proposals"
+            model="ir.actions.act_window">
+        <field name="name">Phiếu đề xuất đặt hàng</field>
+        <field name="res_model">gs25.replenishment.proposal</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_gs25_replenishment_proposal_search"/>
+        <field name="context">{'search_default_unfinished': 1}</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Chưa có phiếu đề xuất đặt hàng
+            </p>
+            <p>
+                Dùng menu "Kiểm tra tồn kho &amp; lập đề xuất" để hệ thống
+                phát hiện sản phẩm dưới mức tồn tối thiểu và tính số lượng cần đặt.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_gs25_replenishment_proposal_lines"
+            model="ir.actions.act_window">
+        <field name="name">Tổng hợp đề xuất theo sản phẩm</field>
+        <field name="res_model">gs25.replenishment.proposal.line</field>
+        <field name="view_mode">list,pivot</field>
+        <field name="search_view_id" ref="view_gs25_replenishment_proposal_line_search"/>
+        <field name="context">{'search_default_open': 1}</field>
+    </record>
+
+    <menuitem
+        id="menu_gs25_generate_proposal"
+        name="Kiểm tra tồn kho &amp; lập đề xuất"
+        parent="menu_gs25_replenishment_operations"
+        action="action_gs25_generate_proposal"
+        groups="gs25_replenishment.group_gs25_replenishment_user"
+        sequence="20"
+    />
+
+    <menuitem
+        id="menu_gs25_replenishment_proposals"
+        name="Phiếu đề xuất đặt hàng"
+        parent="menu_gs25_replenishment_operations"
+        action="action_gs25_replenishment_proposals"
+        groups="gs25_replenishment.group_gs25_replenishment_user"
+        sequence="30"
+    />
+
+    <menuitem
+        id="menu_gs25_replenishment_proposal_lines"
+        name="Tổng hợp đề xuất"
+        parent="menu_gs25_replenishment_reporting"
+        action="action_gs25_replenishment_proposal_lines"
+        groups="gs25_replenishment.group_gs25_replenishment_user"
+        sequence="10"
+    />
+
+</odoo>
