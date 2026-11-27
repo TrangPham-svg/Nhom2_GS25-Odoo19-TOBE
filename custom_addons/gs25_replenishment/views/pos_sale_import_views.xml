@@ -1,0 +1,391 @@
+<odoo>
+    <!-- 1. A02. DANH SÁCH PHIẾU IMPORT DỮ LIỆU BÁN HÀNG -->
+    <record id="view_gs25_pos_sale_import_list" model="ir.ui.view">
+        <field name="name">gs25.pos.sale.import.list</field>
+        <field name="model">gs25.pos.sale.import</field>
+        <field name="arch" type="xml">
+
+            <list string="Dữ liệu bán hàng POS"
+                  decoration-muted="state == 'cancelled'">
+
+                <field name="name"/>
+                <field name="import_date"/>
+                <field name="file_name"/>
+                <field name="warehouse_id" optional="hide"/>
+                <field name="create_uid" string="Người import" optional="show"/>
+                <field name="line_count"/>
+                <field name="error_count" optional="show"/>
+                <field name="duplicate_count" optional="show"/>
+                <field name="total_quantity"/>
+                <field name="picking_id" optional="show"/>
+
+                <field name="state"
+                       widget="badge"
+                       decoration-muted="state == 'draft'"
+                       decoration-info="state == 'checked'"
+                       decoration-success="state == 'done'"
+                       decoration-danger="state == 'cancelled'"/>
+
+            </list>
+
+        </field>
+    </record>
+
+
+    <!-- 2. A02-A03. CHI TIẾT PHIẾU IMPORT -->
+    <record id="view_gs25_pos_sale_import_form" model="ir.ui.view">
+        <field name="name">gs25.pos.sale.import.form</field>
+        <field name="model">gs25.pos.sale.import</field>
+        <field name="arch" type="xml">
+
+            <form string="Dữ liệu bán hàng POS">
+
+                <!-- CÁC NÚT XỬ LÝ NGHIỆP VỤ -->
+                <header>
+
+                    <button name="action_check_data"
+                            type="object"
+                            string="Kiểm tra dữ liệu"
+                            class="btn-primary"
+                            invisible="state != 'draft'"/>
+
+                    <button name="action_process_stock"
+                            type="object"
+                            string="Cập nhật tồn kho"
+                            class="btn-primary"
+                            invisible="state != 'checked'"
+                            confirm="Hệ thống sẽ tạo phiếu xuất bán và trừ tồn kho theo các dòng hợp lệ. Tiếp tục?"/>
+
+                    <button name="action_reset_draft"
+                            type="object"
+                            string="Đặt lại về Nháp"
+                            class="btn-secondary"
+                            invisible="state != 'checked'"/>
+
+                    <button name="action_cancel"
+                            type="object"
+                            string="Hủy phiếu"
+                            class="btn-secondary text-danger"
+                            invisible="state not in ('draft', 'checked')"/>
+
+                    <field name="state"
+                           widget="statusbar"
+                           readonly="1"
+                           statusbar_visible="draft,checked,done"/>
+
+                </header>
+
+                <sheet>
+
+                    <div class="oe_button_box" name="button_box">
+
+                        <button name="action_view_picking"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-truck"
+                                invisible="not picking_id"
+                                groups="stock.group_stock_user">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Phiếu xuất bán</span>
+                            </div>
+                        </button>
+
+                    </div>
+
+                    <!-- HƯỚNG DẪN ĐỊNH DẠNG FILE -->
+                    <div class="alert alert-info"
+                         role="alert"
+                         invisible="state != 'draft'">
+
+                        <strong>Định dạng file CSV xuất từ POS:</strong>
+                        receipt_ref, line_no (không bắt buộc), sale_datetime,
+                        product_code (mã vạch hoặc mã nội bộ), quantity.
+                        Ví dụ: <code>HD0001,1,2026-11-27 08:15:00,8934588012228,2</code>
+
+                    </div>
+
+                    <!-- CẢNH BÁO DÒNG LỖI / TRÙNG -->
+                    <div class="alert alert-warning"
+                         role="alert"
+                         invisible="state != 'checked' or (error_count == 0 and duplicate_count == 0)">
+
+                        <strong>Có dòng lỗi hoặc trùng.</strong>
+                        Các dòng này sẽ không được ghi nhận tồn kho.
+                        Vui lòng kiểm tra lại dữ liệu POS nếu cần.
+
+                    </div>
+
+                    <div class="alert alert-success"
+                         role="alert"
+                         invisible="state != 'done'">
+
+                        <strong>Đã cập nhật tồn kho.</strong>
+                        Các dòng bán hàng đã ghi nhận sẽ không được
+                        ghi nhận lại ở phiếu import khác.
+
+                    </div>
+
+                    <!-- 3. THÔNG TIN PHIẾU -->
+                    <group>
+
+                        <group>
+
+                            <field name="name" readonly="1"/>
+
+                            <field name="warehouse_id"
+                                   readonly="state != 'draft'"
+                                   options="{'no_create': True}"/>
+
+                            <field name="file_data"
+                                   filename="file_name"
+                                   readonly="state != 'draft'"/>
+
+                            <field name="file_name" invisible="1"/>
+
+                            <field name="picking_id"
+                                   readonly="1"
+                                   invisible="not picking_id"/>
+
+                        </group>
+
+                        <group>
+
+                            <field name="import_date" readonly="1"/>
+
+                            <field name="create_uid"
+                                   string="Người import"
+                                   readonly="1"/>
+
+                            <field name="processed_by_id"
+                                   readonly="1"
+                                   invisible="state != 'done'"/>
+
+                            <field name="processed_date"
+                                   readonly="1"
+                                   invisible="state != 'done'"/>
+
+                        </group>
+
+                    </group>
+
+                    <!-- 4. THỐNG KÊ -->
+                    <group string="Kết quả kiểm tra"
+                           invisible="state == 'draft'">
+
+                        <group>
+                            <field name="line_count"/>
+                            <field name="valid_count"/>
+                            <field name="done_count"/>
+                        </group>
+
+                        <group>
+                            <field name="error_count"/>
+                            <field name="duplicate_count"/>
+                            <field name="total_quantity"/>
+                        </group>
+
+                    </group>
+
+                    <notebook>
+
+                        <page string="Dòng bán hàng"
+                              name="lines"
+                              invisible="state == 'draft'">
+
+                            <field name="line_ids" readonly="1">
+
+                                <list create="false"
+                                      edit="false"
+                                      delete="false"
+                                      decoration-danger="state == 'error'"
+                                      decoration-warning="state == 'duplicate'"
+                                      decoration-success="state == 'done'">
+
+                                    <field name="row_number"/>
+                                    <field name="receipt_ref"/>
+                                    <field name="line_no" optional="hide"/>
+                                    <field name="sale_datetime"/>
+                                    <field name="product_code"/>
+                                    <field name="product_id"/>
+                                    <field name="quantity"/>
+                                    <field name="uom_id" optional="hide"/>
+                                    <field name="state" widget="badge"
+                                           decoration-danger="state == 'error'"
+                                           decoration-warning="state == 'duplicate'"
+                                           decoration-success="state == 'done'"
+                                           decoration-info="state == 'valid'"/>
+                                    <field name="message"/>
+
+                                </list>
+
+                            </field>
+
+                        </page>
+
+                        <page string="Ghi chú" name="note">
+
+                            <field name="note"
+                                   readonly="state in ('done', 'cancelled')"
+                                   placeholder="Ghi chú về ca bán, máy POS, ..."/>
+
+                        </page>
+
+                    </notebook>
+
+                </sheet>
+
+                <chatter/>
+
+            </form>
+
+        </field>
+    </record>
+
+
+    <!-- 5. BỘ LỌC TÌM KIẾM -->
+    <record id="view_gs25_pos_sale_import_search" model="ir.ui.view">
+        <field name="name">gs25.pos.sale.import.search</field>
+        <field name="model">gs25.pos.sale.import</field>
+        <field name="arch" type="xml">
+
+            <search string="Tìm kiếm phiếu import">
+
+                <field name="name"/>
+                <field name="file_name"/>
+                <field name="line_ids" string="Mã hóa đơn"
+                       filter_domain="[('line_ids.receipt_ref', 'ilike', self)]"/>
+
+                <filter name="draft" string="Nháp"
+                        domain="[('state', '=', 'draft')]"/>
+                <filter name="checked" string="Đã kiểm tra"
+                        domain="[('state', '=', 'checked')]"/>
+                <filter name="done" string="Đã cập nhật tồn kho"
+                        domain="[('state', '=', 'done')]"/>
+                <filter name="cancelled" string="Đã hủy"
+                        domain="[('state', '=', 'cancelled')]"/>
+
+                <separator/>
+
+                <filter name="filter_import_date" string="Ngày import"
+                        date="import_date"/>
+
+                <group>
+                    <filter name="group_by_state" string="Trạng thái"
+                            context="{'group_by': 'state'}"/>
+                    <filter name="group_by_date" string="Ngày import"
+                            context="{'group_by': 'import_date:day'}"/>
+                </group>
+
+            </search>
+
+        </field>
+    </record>
+
+
+    <!-- 6. DANH SÁCH DÒNG BÁN HÀNG ĐÃ GHI NHẬN -->
+    <record id="view_gs25_pos_sale_line_list" model="ir.ui.view">
+        <field name="name">gs25.pos.sale.line.list</field>
+        <field name="model">gs25.pos.sale.line</field>
+        <field name="arch" type="xml">
+
+            <list string="Dòng bán hàng POS"
+                  create="false" edit="false" delete="false">
+
+                <field name="import_id"/>
+                <field name="receipt_ref"/>
+                <field name="line_no" optional="hide"/>
+                <field name="sale_datetime"/>
+                <field name="product_id"/>
+                <field name="quantity" sum="Tổng"/>
+                <field name="uom_id" optional="hide"/>
+                <field name="state" widget="badge"
+                       decoration-danger="state == 'error'"
+                       decoration-warning="state == 'duplicate'"
+                       decoration-success="state == 'done'"/>
+
+            </list>
+
+        </field>
+    </record>
+
+    <record id="view_gs25_pos_sale_line_pivot" model="ir.ui.view">
+        <field name="name">gs25.pos.sale.line.pivot</field>
+        <field name="model">gs25.pos.sale.line</field>
+        <field name="arch" type="xml">
+            <pivot string="Sản lượng bán theo sản phẩm">
+                <field name="product_id" type="row"/>
+                <field name="sale_datetime" interval="day" type="col"/>
+                <field name="quantity" type="measure"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_gs25_pos_sale_line_search" model="ir.ui.view">
+        <field name="name">gs25.pos.sale.line.search</field>
+        <field name="model">gs25.pos.sale.line</field>
+        <field name="arch" type="xml">
+            <search string="Tìm kiếm dòng bán hàng">
+                <field name="receipt_ref"/>
+                <field name="product_id"/>
+                <field name="import_id"/>
+                <filter name="processed" string="Đã ghi nhận tồn kho"
+                        domain="[('is_processed', '=', True)]"/>
+                <filter name="filter_sale_date" string="Thời gian bán"
+                        date="sale_datetime"/>
+                <group>
+                    <filter name="group_by_product" string="Sản phẩm"
+                            context="{'group_by': 'product_id'}"/>
+                    <filter name="group_by_sale_date" string="Ngày bán"
+                            context="{'group_by': 'sale_datetime:day'}"/>
+                </group>
+            </search>
+        </field>
+    </record>
+
+
+    <!-- 7. ACTION VÀ MENU -->
+    <record id="action_gs25_pos_sale_imports"
+            model="ir.actions.act_window">
+        <field name="name">Dữ liệu bán hàng POS</field>
+        <field name="res_model">gs25.pos.sale.import</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_gs25_pos_sale_import_search"/>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Import file CSV dữ liệu bán hàng xuất từ máy POS
+            </p>
+            <p>
+                Hệ thống kiểm tra dữ liệu, loại bỏ dòng trùng
+                và trừ tồn kho cửa hàng theo số lượng đã bán.
+            </p>
+        </field>
+    </record>
+
+    <record id="action_gs25_pos_sale_lines"
+            model="ir.actions.act_window">
+        <field name="name">Sản lượng bán POS</field>
+        <field name="res_model">gs25.pos.sale.line</field>
+        <field name="view_mode">pivot,list</field>
+        <field name="search_view_id" ref="view_gs25_pos_sale_line_search"/>
+        <field name="context">{'search_default_processed': 1}</field>
+    </record>
+
+    <menuitem
+        id="menu_gs25_pos_sale_imports"
+        name="Dữ liệu bán hàng POS"
+        parent="menu_gs25_replenishment_operations"
+        action="action_gs25_pos_sale_imports"
+        groups="gs25_replenishment.group_gs25_replenishment_user"
+        sequence="10"
+    />
+
+    <menuitem
+        id="menu_gs25_pos_sale_lines"
+        name="Sản lượng bán POS"
+        parent="menu_gs25_replenishment_reporting"
+        action="action_gs25_pos_sale_lines"
+        groups="gs25_replenishment.group_gs25_replenishment_user"
+        sequence="20"
+    />
+
+</odoo>
