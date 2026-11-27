@@ -1,0 +1,89 @@
+<odoo>
+    <!-- 1. A04. DANH SÁCH MỨC TỒN KHO TỐI THIỂU (CHỈNH SỬA TRỰC TIẾP) -->
+    <record id="view_gs25_orderpoint_list" model="ir.ui.view">
+        <field name="name">stock.warehouse.orderpoint.gs25.list</field>
+        <field name="model">stock.warehouse.orderpoint</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <list string="Mức tồn kho tối thiểu"
+                  editable="bottom"
+                  decoration-danger="qty_forecast &lt;= product_min_qty">
+
+                <field name="gs25_is_replenishment" column_invisible="1"/>
+                <field name="trigger" column_invisible="1"/>
+                <field name="company_id" column_invisible="1"/>
+
+                <field name="product_id"
+                       options="{'no_create': True}"/>
+
+                <field name="warehouse_id"
+                       optional="hide"
+                       options="{'no_create': True}"/>
+
+                <field name="location_id"
+                       options="{'no_create': True}"/>
+
+                <field name="qty_on_hand" string="Tồn hiện có"/>
+                <field name="qty_forecast" string="Tồn dự báo"/>
+
+                <field name="product_min_qty" string="Tồn tối thiểu"/>
+                <field name="product_max_qty" string="Tồn tối đa"/>
+                <field name="gs25_pack_qty"/>
+                <field name="product_uom" string="Đơn vị" optional="show"/>
+                <field name="gs25_note" optional="show"/>
+                <field name="active" widget="boolean_toggle" optional="hide"/>
+
+            </list>
+
+        </field>
+    </record>
+
+
+    <!-- 2. BỘ LỌC MỨC TỒN -->
+    <record id="view_gs25_orderpoint_search" model="ir.ui.view">
+        <field name="name">stock.warehouse.orderpoint.gs25.search</field>
+        <field name="model">stock.warehouse.orderpoint</field>
+        <field name="priority">99</field>
+        <field name="arch" type="xml">
+
+            <search string="Mức tồn kho tối thiểu">
+
+                <field name="product_id"/>
+                <field name="product_category_id"/>
+                <field name="location_id"/>
+
+                <filter name="inactive" string="Đã lưu trữ"
+                        domain="[('active', '=', False)]"/>
+
+                <group>
+                    <filter name="group_by_category" string="Nhóm sản phẩm"
+                            context="{'group_by': 'product_category_id'}"/>
+                    <filter name="group_by_location" string="Vị trí"
+                            context="{'group_by': 'location_id'}"/>
+                </group>
+
+            </search>
+
+        </field>
+    </record>
+
+
+    <!-- 3. ACTION VÀ MENU -->
+    <record id="action_gs25_orderpoints" model="ir.actions.server">
+        <field name="name">Mức tồn kho tối thiểu</field>
+        <field name="model_id" ref="stock.model_stock_warehouse_orderpoint"/>
+        <field name="state">code</field>
+        <field name="code">action = model.action_gs25_open_min_levels()</field>
+    </record>
+
+    <menuitem
+        id="menu_gs25_orderpoints"
+        name="Mức tồn kho tối thiểu"
+        parent="menu_gs25_replenishment_config"
+        action="action_gs25_orderpoints"
+        groups="gs25_replenishment.group_gs25_replenishment_manager"
+        sequence="20"
+    />
+
+</odoo>
